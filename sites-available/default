@@ -1,0 +1,41 @@
+# nginx 1.27.0, intermediate config, OpenSSL 3.0
+# https://ssl-config.mozilla.org/#server=nginx&version=1.27.0&config=intermediate&openssl=3.0&guideline=5.7
+
+# Define the upstream backend server
+upstream backend {
+    server 192.168.1.17 ;
+}
+
+# Rate limiting zone configuration
+limit_req_zone $binary_remote_addr zone=mylimit:10m rate=20r/s;
+
+# Redirect all HTTP requests to HTTPS
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS server configuration
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    include /etc/nginx/conf.d/ssl.conf;
+
+    # Apply rate limiting to all requests on HTTPS
+    location / {
+        limit_req zone=mylimit burst=20 nodelay;
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
+}

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  nginx-master:
+    container_name: nginx_server
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+      - ./sites-available:/etc/nginx/sites-available
+      - ./sites-enabled:/etc/nginx/sites-enabled
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - nginx_network
+
+networks:
+  nginx_network:
+    driver: bridge
